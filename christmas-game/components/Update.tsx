@@ -64,12 +64,11 @@ const sprint = function (
   }
 };
 
-const staminaBar = function (
-  this: Phaser.Scene,
-  maxStamina: number,
-  staminaHeight: number,
-  staminaBar: Phaser.GameObjects.Graphics
-) {
+const staminaBar = function (this: Phaser.Scene) {
+  const maxStamina = 100;
+  const staminaHeight = 400;
+  const staminaBar = this.registry.get("staminaBar");
+
   if (this.registry.get("currentStamina") == null) {
     this.registry.set("currentStamina", maxStamina);
   }
@@ -165,9 +164,5 @@ export default function Update(this: Phaser.Scene) {
     stick
   );
 
-  const staminaBarElement = this.registry.get("staminaBar");
-  const maxStamina = 100;
-  const staminaHeight = 400;
-
-  staminaBar.call(this, maxStamina, staminaHeight, staminaBarElement);
+  staminaBar.call(this);
 }

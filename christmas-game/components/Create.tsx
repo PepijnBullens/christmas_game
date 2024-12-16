@@ -86,25 +86,29 @@ export default function create(this: Phaser.Scene) {
   );
   pitch.setScale(scale);
   pitch.setDepth(-1);
-
-  const staminaBar = this.add.graphics();
-  this.registry.set("staminaBar", staminaBar);
+  this.registry.set("pitch", pitch);
 
   // Create player and puck
   const player = this.matter.add.sprite(centerX, centerY, "player");
   player.setCircle(player.width / 2);
   player.setFrictionAir(0.05); // Reduce air friction to make the player slide
+  this.registry.set("player", player);
 
   const puck = this.matter.add.sprite(centerX, centerY + 100, "player");
   puck.setCircle(puck.width / 2);
   puck.setScale(0.5);
   puck.setFrictionAir(0.001);
   puck.setBounce(0.9); // Increase the bounce value to make it more bouncy
+  this.registry.set("puck", puck);
 
   // Create stick
   const stick = this.matter.add.sprite(player.x + 40, player.y, "stick");
   stick.setScale(0.4);
   stick.setRectangle(80, stick.height / 2, { isSensor: false });
+  this.registry.set("stick", stick);
+
+  const staminaBar = this.add.graphics();
+  this.registry.set("staminaBar", staminaBar);
 
   // Set up collision categories
   const playerCategory = this.matter.world.nextCategory();
@@ -120,6 +124,8 @@ export default function create(this: Phaser.Scene) {
   stick.setCollidesWith([puckCategory]);
   puck.setCollidesWith([lineCategory, playerCategory, stickCategory]);
 
+  this.registry.set("lineCategory", lineCategory);
+
   const constraint = this.matter.add.constraint(
     player.body as MatterJS.BodyType,
     stick.body as MatterJS.BodyType,
@@ -133,11 +139,7 @@ export default function create(this: Phaser.Scene) {
     }
   );
 
-  this.registry.set("player", player);
-  this.registry.set("stick", stick);
-  this.registry.set("puck", puck);
   this.registry.set("playerStickConstraint", constraint);
-  this.registry.set("lineCategory", lineCategory);
 
   const movementKeys = this.input.keyboard?.addKeys({
     up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -146,12 +148,14 @@ export default function create(this: Phaser.Scene) {
     right: Phaser.Input.Keyboard.KeyCodes.D,
     shift: Phaser.Input.Keyboard.KeyCodes.SHIFT,
   });
+
   this.registry.set("movementKeys", movementKeys);
 
   const stickKeys = this.input.keyboard?.addKeys({
     left: Phaser.Input.Keyboard.KeyCodes.K,
     right: Phaser.Input.Keyboard.KeyCodes.L,
   });
+
   this.registry.set("stickKeys", stickKeys);
 
   // Define the pitch boundaries using createLine
