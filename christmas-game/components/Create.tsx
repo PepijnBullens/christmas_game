@@ -165,7 +165,7 @@ export default function create(this: Phaser.Scene) {
     { x: centerX - ringWidth / 2, y: centerY - ringHeight / 2 },
     { x: centerX + ringWidth / 2, y: centerY - ringHeight / 2 },
     0,
-    100,
+    1,
     false
   ); // TOP
 
@@ -180,7 +180,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY + ringHeight / 2 - edgeHeight,
     },
     0,
-    40,
+    1,
     false
   ); // RIGHT
 
@@ -192,7 +192,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY - ringHeight / 2 + edgeHeight,
     },
     30,
-    25,
+    20,
     false
   ); // TOP LEFT
 
@@ -204,7 +204,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY - ringHeight / 2 + edgeHeight,
     },
     -30,
-    25,
+    20,
     false
   ); // TOP RIGHT
 
@@ -216,7 +216,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY + ringHeight / 2 - edgeHeight,
     },
     30,
-    25,
+    20,
     true
   ); // BOTTOM LEFT
 
@@ -228,7 +228,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY + ringHeight / 2 - edgeHeight,
     },
     -30,
-    25,
+    20,
     true
   ); // BOTTOM RIGHT
 
@@ -243,7 +243,7 @@ export default function create(this: Phaser.Scene) {
       y: centerY + ringHeight / 2 - edgeHeight,
     },
     0,
-    40,
+    1,
     false
   ); // LEFT
 
@@ -252,7 +252,7 @@ export default function create(this: Phaser.Scene) {
     { x: centerX - ringWidth / 2, y: centerY + ringHeight / 2 },
     { x: centerX + ringWidth / 2, y: centerY + ringHeight / 2 },
     0,
-    100,
+    1,
     false
   ); // BOTTOM
 }
