@@ -54,8 +54,21 @@ const createLine = function (
       2 * (1 - t) * t * controlPoint.y +
       t * t * endPoint.y;
 
+    const nextT = (i + 1) / curveSegments;
+    const nextX =
+      (1 - nextT) * (1 - nextT) * startPoint.x +
+      2 * (1 - nextT) * nextT * controlPoint.x +
+      nextT * nextT * endPoint.x;
+    const nextY =
+      (1 - nextT) * (1 - nextT) * startPoint.y +
+      2 * (1 - nextT) * nextT * controlPoint.y +
+      nextT * nextT * endPoint.y;
+
+    const angle = Phaser.Math.Angle.Between(x, y, nextX, nextY);
+
     scene.matter.add.rectangle(x, y, 10, 10, {
       isStatic: true,
+      angle: angle,
       collisionFilter: { category: lineCategory },
     });
   }
