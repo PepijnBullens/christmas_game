@@ -16,6 +16,9 @@ const game: React.FC = () => {
           gravity: { x: 0, y: 0 },
         },
       },
+      input: {
+        gamepad: true, // Add this to enable gamepad support
+      },
       scene: {
         preload,
         create,
@@ -44,7 +47,7 @@ const game: React.FC = () => {
     Update.call(this);
   };
 
-  return <div id="phaser-game" />;
+  return <></>;
 };
 
 export default game;

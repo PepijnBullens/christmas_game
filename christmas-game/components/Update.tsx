@@ -1,11 +1,63 @@
 import Phaser from "phaser";
 
+interface MovementKeys {
+  left?: Phaser.Input.Keyboard.Key;
+  right?: Phaser.Input.Keyboard.Key;
+  up?: Phaser.Input.Keyboard.Key;
+  down?: Phaser.Input.Keyboard.Key;
+}
+
+interface Player extends Phaser.Physics.Matter.Sprite {}
+
+const movement = function (
+  this: Phaser.Scene,
+  movementKeys: MovementKeys,
+  player: Player
+) {
+  const gamepad = this.registry.get("gamepad") as Phaser.Input.Gamepad.Gamepad;
+
+  const speed = 5;
+
+  // Player movement with keyboard
+  if (movementKeys.left?.isDown) {
+    player.setVelocityX(-speed);
+  } else if (movementKeys.right?.isDown) {
+    player.setVelocityX(speed);
+  } else {
+    player.setVelocityX(0);
+  }
+
+  if (movementKeys.up?.isDown) {
+    player.setVelocityY(-speed);
+  } else if (movementKeys.down?.isDown) {
+    player.setVelocityY(speed);
+  } else {
+    player.setVelocityY(0);
+  }
+
+  // Player movement with gamepad
+  if (gamepad) {
+    const padX = gamepad.axes[0].getValue();
+    const padY = gamepad.axes[1].getValue();
+
+    if (Math.abs(padX) > 0.1) {
+      player.setVelocityX(padX * speed);
+    }
+
+    if (Math.abs(padY) > 0.1) {
+      player.setVelocityY(padY * speed);
+    }
+  }
+};
+
 const stickRotation = function (
-  scene: Phaser.Scene,
-  stickKeys: any,
+  this: Phaser.Scene,
+  stickKeys: Phaser.Types.Input.Keyboard.CursorKeys,
   stick: Phaser.Physics.Matter.Sprite
 ) {
-  const player = scene.registry.get("player") as Phaser.Physics.Matter.Sprite;
+  const gamepad = this.registry.get("gamepad") as Phaser.Input.Gamepad.Gamepad;
+
+  const player = this.registry.get("player") as Phaser.Physics.Matter.Sprite;
   const angleSpeed = 0.15; // Adjust the rotation speed as needed
 
   // Prevent physics engine from applying rotation when rotating manually
@@ -16,6 +68,14 @@ const stickRotation = function (
     stick.rotation -= angleSpeed;
   } else if (stickKeys.right?.isDown) {
     stick.rotation += angleSpeed;
+  }
+
+  // Rotate the stick based on gamepad input
+  if (gamepad) {
+    const padRotation = gamepad.axes[2].getValue(); // Assuming the right stick X-axis controls rotation
+    if (Math.abs(padRotation) > 0.1) {
+      stick.rotation += padRotation * angleSpeed;
+    }
   }
 
   // Get the current position of the player
@@ -31,8 +91,6 @@ const stickRotation = function (
 
   // Update the position of the stick without affecting the player's movement
   stick.setPosition(playerX + offsetX, playerY + offsetY);
-
-  // We don't need to set the constraint's pointA directly since it's managed by Matter.js
 };
 
 const sprint = function (
@@ -40,8 +98,11 @@ const sprint = function (
   player: Phaser.Physics.Matter.Sprite,
   movementKeys: Phaser.Types.Input.Keyboard.CursorKeys
 ) {
+  const gamepad = this.registry.get("gamepad") as Phaser.Input.Gamepad.Gamepad;
+
   const speed = 10;
-  const tryingToSprint = movementKeys.shift?.isDown; // Whether the player is sprinting
+  const tryingToSprint =
+    movementKeys.shift?.isDown || gamepad?.buttons[6].value > 0;
   const canSprint = this.registry.get("currentStamina") > 0;
 
   // Sprinting
@@ -58,6 +119,19 @@ const sprint = function (
       player.setVelocityY(-speed);
     } else if (movementKeys.down?.isDown) {
       player.setVelocityY(speed);
+    }
+
+    if (gamepad) {
+      const padX = gamepad.axes[0].getValue();
+      const padY = gamepad.axes[1].getValue();
+
+      if (Math.abs(padX) > 0.1) {
+        player.setVelocityX(padX * speed);
+      }
+
+      if (Math.abs(padY) > 0.1) {
+        player.setVelocityY(padY * speed);
+      }
     }
   } else {
     this.registry.set("isSprinting", false);
@@ -150,20 +224,11 @@ export default function Update(this: Phaser.Scene) {
 
   if (!player || !stick || !movementKeys || !stickKeys) return;
 
-  const speed = 5;
-
-  // Player movement
-  if (movementKeys.left?.isDown) {
-    player.setVelocityX(-speed);
-  } else if (movementKeys.right?.isDown) {
-    player.setVelocityX(speed);
-  }
-
-  if (movementKeys.up?.isDown) {
-    player.setVelocityY(-speed);
-  } else if (movementKeys.down?.isDown) {
-    player.setVelocityY(speed);
-  }
+  movement.call(
+    this,
+    movementKeys as Phaser.Types.Input.Keyboard.CursorKeys,
+    player
+  );
 
   sprint.call(
     this,
@@ -172,7 +237,7 @@ export default function Update(this: Phaser.Scene) {
   );
 
   // Stick rotation around the player
-  stickRotation(
+  stickRotation.call(
     this,
     stickKeys as Phaser.Types.Input.Keyboard.CursorKeys,
     stick

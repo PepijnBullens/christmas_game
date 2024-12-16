@@ -158,6 +158,11 @@ export default function create(this: Phaser.Scene) {
 
   this.registry.set("stickKeys", stickKeys);
 
+  this.input.gamepad?.once("connected", (pad: Phaser.Input.Gamepad.Gamepad) => {
+    this.registry.set("gamepad", pad);
+    console.log("Gamepad connected");
+  });
+
   // Define the pitch boundaries using createLine
   const ringWidth = 800;
   const ringHeight = 520;
