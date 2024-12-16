@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import SnowBackground from "@/components/SnowBackground";
 
-const PhaserGame = dynamic(() => import("../components/game"), {
+const PhaserGame = dynamic(() => import("../components/Game"), {
   ssr: false,
 });
 
