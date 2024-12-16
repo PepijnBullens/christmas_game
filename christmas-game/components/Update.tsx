@@ -128,6 +128,20 @@ const staminaBar = function (this: Phaser.Scene) {
   );
 };
 
+const checkOutOfBounds = function (this: Phaser.Scene) {
+  const pitch = this.registry.get("pitch") as Phaser.Physics.Matter.Sprite;
+  const puck = this.registry.get("puck") as Phaser.Physics.Matter.Sprite;
+
+  if (pitch && puck) {
+    const pitchBounds = pitch.getBounds();
+    const puckBounds = puck.getBounds();
+
+    if (!Phaser.Geom.Intersects.RectangleToRectangle(pitchBounds, puckBounds)) {
+      this.scene.restart();
+    }
+  }
+};
+
 export default function Update(this: Phaser.Scene) {
   const player = this.registry.get("player") as Phaser.Physics.Matter.Sprite;
   const stick = this.registry.get("stick") as Phaser.Physics.Matter.Sprite;
@@ -165,4 +179,6 @@ export default function Update(this: Phaser.Scene) {
   );
 
   staminaBar.call(this);
+
+  checkOutOfBounds.call(this);
 }
