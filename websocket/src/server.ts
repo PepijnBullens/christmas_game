@@ -1,5 +1,12 @@
-const WebSocket = require("ws");
-const http = require("http");
+import WebSocket from "ws";
+import http from "http";
+
+interface WebsocketMessage {
+    type: string;
+    username?: string;
+    color?: string;
+    position?: { x: number; y: number };
+}
 
 const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/plain" });
@@ -42,28 +49,19 @@ const wss = new WebSocket.Server({ server });
 
 const clients = new Map();
 
-let inactivityTimeout;
-let inactivityCheckInterval = 15000;
-const IDLE_TRESHOLD = 30000;
-
 wss.on("connection", (ws) => {
     const metadata = {
         username: generateRandomUsername(),
         color: `${
             pastelColors[Math.floor(Math.random() * pastelColors.length)]
         }`,
-        lastMove: new Date().getTime(),
     };
-
-    if (!inactivityTimeout) {
-        startInactivityCheck();
-    }
 
     console.log("Client connected");
     clients.set(ws, metadata);
 
-    ws.on("message", (msg) => {
-        const message = JSON.parse(msg);
+    ws.on("message", (msg: string) => {
+        const message = JSON.parse(msg) ;
 
         if (!message?.type) {
             return;
@@ -105,9 +103,6 @@ wss.on("connection", (ws) => {
     ws.on("close", () => {
         console.log("Client disconnected");
         clients.delete(ws);
-        if (clients.size === 0) {
-            stopInactivityCheck();
-        }
         broadcastMessage(
             {
                 type: "disconnect",
@@ -118,42 +113,7 @@ wss.on("connection", (ws) => {
     });
 });
 
-function startInactivityCheck() {
-    if (inactivityTimeout) {
-        return;
-    }
-
-    inactivityTimeout = setInterval(
-        checkInactiveClients,
-        inactivityCheckInterval
-    );
-}
-
-function stopInactivityCheck() {
-    console.log("Stopping inactivity check");
-    clearInterval(inactivityTimeout);
-    inactivityTimeout = null;
-}
-
-function checkInactiveClients() {
-    console.log("Checking inactive clients");
-    const now = new Date();
-    for (const [client, metadata] of clients.entries()) {
-        if (now - metadata.lastMove > IDLE_TRESHOLD) {
-            client.send(
-                JSON.stringify({
-                    type: "idle",
-                })
-            );
-            client.terminate();
-            clients.delete(client);
-        }
-    }
-
-    console.log("Active clients: ", clients.size);
-}
-
-function broadcastMessage(message, sender) {
+function broadcastMessage(message: WebsocketMessage, sender: WebSocket) {
     [...clients.keys()].forEach((client) => {
         if (client !== sender && client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(message));
@@ -163,5 +123,5 @@ function broadcastMessage(message, sender) {
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-    console.log(`Server started on port ${server.address().port}`);
+    console.log(`Server started on port ${PORT}`);
 });

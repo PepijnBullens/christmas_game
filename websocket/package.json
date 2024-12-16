@@ -1,6 +1,14 @@
 {
   "dependencies": {
+    "@types/ws": "^8.5.13",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "ws": "^8.18.0"
+  },
+  "scripts": {
+    "dev": "ts-node src/server.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
   }
 }
