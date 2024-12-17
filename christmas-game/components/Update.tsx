@@ -187,11 +187,15 @@ const checkOutOfBounds = function (this: Phaser.Scene) {
   const puck = this.registry.get("puck") as Phaser.Physics.Matter.Sprite;
   const player = this.registry.get("player") as Phaser.Physics.Matter.Sprite;
 
-  if (pitch && puck) {
+  if (pitch && puck && player) {
     const pitchBounds = pitch.getBounds();
     const puckBounds = puck.getBounds();
+    const playerBounds = player.getBounds();
 
-    if (!Phaser.Geom.Intersects.RectangleToRectangle(pitchBounds, puckBounds)) {
+    if (
+      !Phaser.Geom.Intersects.RectangleToRectangle(pitchBounds, puckBounds) ||
+      !Phaser.Geom.Intersects.RectangleToRectangle(pitchBounds, playerBounds)
+    ) {
       puck.setPosition(pitch.x, pitch.y);
       puck.setVelocity(0, 0);
       player.setPosition(pitch.x, pitch.y);
