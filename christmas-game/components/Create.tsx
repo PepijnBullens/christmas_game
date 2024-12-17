@@ -78,7 +78,6 @@ export default function create(this: Phaser.Scene) {
   const centerX = window.innerWidth / 2;
   const centerY = window.innerHeight / 2;
 
-  // Add the pitch background
   const pitch = this.add.image(centerX, centerY, "pitch");
   const scale = Math.min(
     window.innerWidth / pitch.width,
@@ -88,58 +87,14 @@ export default function create(this: Phaser.Scene) {
   pitch.setDepth(-1);
   this.registry.set("pitch", pitch);
 
-  // Create player and puck
   const player = this.matter.add.sprite(centerX, centerY, "player");
-  player.setCircle(player.width / 2);
-  player.setFrictionAir(0.05); // Reduce air friction to make the player slide
+  player.setBody({
+    type: "rectangle",
+    width: player.width,
+    height: player.height / 2,
+  });
+  player.setFrictionAir(0.05);
   this.registry.set("player", player);
-
-  const puck = this.matter.add.sprite(centerX, centerY + 100, "player");
-  puck.setCircle(puck.width / 2);
-  puck.setScale(0.5);
-  puck.setFrictionAir(0.001);
-  puck.setBounce(0.9); // Increase the bounce value to make it more bouncy
-  this.registry.set("puck", puck);
-
-  // Create stick
-  const stick = this.matter.add.sprite(player.x + 40, player.y, "stick");
-  stick.setScale(0.4);
-  stick.setRectangle(80, stick.height / 2, { isSensor: false });
-  this.registry.set("stick", stick);
-
-  const staminaBar = this.add.graphics();
-  this.registry.set("staminaBar", staminaBar);
-
-  // Set up collision categories
-  const playerCategory = this.matter.world.nextCategory();
-  const stickCategory = this.matter.world.nextCategory();
-  const lineCategory = this.matter.world.nextCategory();
-  const puckCategory = this.matter.world.nextCategory();
-
-  player.setCollisionCategory(playerCategory);
-  stick.setCollisionCategory(stickCategory);
-  puck.setCollisionCategory(puckCategory);
-
-  player.setCollidesWith([lineCategory, puckCategory]);
-  stick.setCollidesWith([puckCategory]);
-  puck.setCollidesWith([lineCategory, playerCategory, stickCategory]);
-
-  this.registry.set("lineCategory", lineCategory);
-
-  const constraint = this.matter.add.constraint(
-    player.body as MatterJS.BodyType,
-    stick.body as MatterJS.BodyType,
-    0,
-    1,
-    {
-      pointA: { x: 40, y: 0 },
-      pointB: { x: 0, y: 0 },
-      stiffness: 1,
-      damping: 1,
-    }
-  );
-
-  this.registry.set("playerStickConstraint", constraint);
 
   const movementKeys = this.input.keyboard?.addKeys({
     up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -149,21 +104,44 @@ export default function create(this: Phaser.Scene) {
     shift: Phaser.Input.Keyboard.KeyCodes.SHIFT,
   });
 
-  this.registry.set("movementKeys", movementKeys);
-
-  const stickKeys = this.input.keyboard?.addKeys({
-    left: Phaser.Input.Keyboard.KeyCodes.K,
-    right: Phaser.Input.Keyboard.KeyCodes.L,
+  const rotationKeys = this.input.keyboard?.addKeys({
+    left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+    right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
   });
 
-  this.registry.set("stickKeys", stickKeys);
+  this.registry.set("movementKeys", movementKeys);
+  this.registry.set("rotationKeys", rotationKeys);
+
+  const puck = this.matter.add.sprite(centerX, centerY + 100, "player");
+  puck.setCircle(puck.width / 2);
+  puck.setScale(0.5);
+  puck.setFrictionAir(0.001);
+  puck.setBounce(0.9);
+  puck.setBounce(1);
+  puck.setFixedRotation();
+
+  this.registry.set("puck", puck);
+
+  const staminaBar = this.add.graphics();
+  this.registry.set("staminaBar", staminaBar);
+
+  const playerCategory = this.matter.world.nextCategory();
+  const lineCategory = this.matter.world.nextCategory();
+  const puckCategory = this.matter.world.nextCategory();
+
+  player.setCollisionCategory(playerCategory);
+  puck.setCollisionCategory(puckCategory);
+
+  player.setCollidesWith([lineCategory, puckCategory]);
+  puck.setCollidesWith([lineCategory, playerCategory]);
+
+  this.registry.set("lineCategory", lineCategory);
 
   this.input.gamepad?.once("connected", (pad: Phaser.Input.Gamepad.Gamepad) => {
     this.registry.set("gamepad", pad);
     console.log("Gamepad connected");
   });
 
-  // Define the pitch boundaries using createLine
   const ringWidth = 800;
   const ringHeight = 520;
   const edgeWidth = 120;
