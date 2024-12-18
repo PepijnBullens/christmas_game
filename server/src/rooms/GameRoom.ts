@@ -27,6 +27,48 @@ export class GameRoom extends Room<GameRoomState> {
     // Set the initial state
     this.setState(new GameRoomState());
 
+    // Create collision borders around the edges of the screen
+    const canvaswidth = 800;
+    const canvasheight = 600;
+    const thickness = 200;
+
+    const borders = [
+      // Top border
+      Matter.Bodies.rectangle(
+        canvaswidth / 2,
+        -thickness / 2,
+        canvaswidth,
+        thickness,
+        { isStatic: true }
+      ),
+      // Bottom border
+      Matter.Bodies.rectangle(
+        canvaswidth / 2,
+        canvasheight + thickness / 2,
+        canvaswidth,
+        thickness,
+        { isStatic: true }
+      ),
+      // Left border
+      Matter.Bodies.rectangle(
+        -thickness / 2,
+        canvasheight / 2,
+        thickness,
+        canvasheight,
+        { isStatic: true }
+      ),
+      // Right border
+      Matter.Bodies.rectangle(
+        canvaswidth + thickness / 2,
+        canvasheight / 2,
+        thickness,
+        canvasheight,
+        { isStatic: true }
+      ),
+    ];
+
+    Matter.World.add(this.engine.world, borders);
+
     // Game loop for physics
     this.clock.setInterval(() => {
       Matter.Engine.update(this.engine, 1000 / 60); // Update physics engine
@@ -35,11 +77,15 @@ export class GameRoom extends Room<GameRoomState> {
 
     // Register message handling
     this.onMessage(
-      "update_velocity",
+      "request_player_movement",
       (client, message: { x: number; y: number }) => {
         const playerBody = this.playerBodies.get(client.sessionId);
         if (playerBody) {
-          Matter.Body.setVelocity(playerBody, { x: message.x, y: message.y });
+          const speed = 5; // Define a constant speed
+          Matter.Body.setVelocity(playerBody, {
+            x: playerBody.velocity.x + message.x * speed,
+            y: playerBody.velocity.y + message.y * speed,
+          });
         }
       }
     );
@@ -117,8 +163,17 @@ export class GameRoom extends Room<GameRoomState> {
       }
     }
 
+    // Prepare positions to broadcast
+    const positions = Array.from(this.state.players.entries()).map(
+      ([sessionId, player]) => ({
+        playerId: sessionId,
+        x: player.x,
+        y: player.y,
+      })
+    );
+
     // Broadcast positions to all clients
-    this.broadcast("players_update", this.state.players);
+    this.broadcast("update_players", positions);
   }
 
   onLeave(client: Client) {

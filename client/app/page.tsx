@@ -7,6 +7,7 @@ import Matter from "matter-js";
 const Game = () => {
   const [room, setRoom] = useState<Room<any> | null>(null);
   const [restart, setRestart] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   const sceneRef = useRef(null);
   const engine = Matter.Engine.create();
@@ -25,28 +26,32 @@ const Game = () => {
         const joinedRoom = await client.joinOrCreate(GAME_ROOM);
         console.log("Joined room:", joinedRoom);
 
-        joinedRoom.onMessage("client_left", (data) => {
-          console.log("client_left", data);
-
-          if (opponent) {
-            Matter.World.remove(world, opponent);
-            opponent = null;
-          }
-
-          if (player) {
-            Matter.World.remove(world, player);
-            player = null;
-          }
-
-          setRestart(true);
+        joinedRoom.onMessage("update_players", (data) => {
+          data.map((playerData: any) => {
+            if (playerData.playerId !== joinedRoom.sessionId) {
+              if (player) {
+                Matter.Body.setPosition(player, {
+                  x: playerData.x,
+                  y: playerData.y,
+                });
+              }
+            } else {
+              if (opponent) {
+                Matter.Body.setPosition(opponent, {
+                  x: playerData.x,
+                  y: playerData.y,
+                });
+              }
+            }
+          });
         });
 
         joinedRoom.onMessage("opponent_position", (data) => {
-          console.log("Opponent position:", data);
-
           if (opponent) {
             Matter.Body.setPosition(opponent, { x: data.x, y: data.y });
             opponent.render.fillStyle = "blue";
+            opponent.render.visible = true;
+            setGameStarted(true);
           }
         });
 
@@ -60,22 +65,25 @@ const Game = () => {
 
           Matter.World.add(world, player);
 
-          opponent = Matter.Bodies.circle(
-            data.screen.width / 2,
-            data.screen.height / 2,
-            data.player.size
-          );
-          opponent.render.fillStyle = "white";
+          if (data.opponent.playerId !== undefined) {
+            opponent = Matter.Bodies.circle(
+              data.opponent.x,
+              data.opponent.y,
+              data.player.size
+            );
+            opponent.render.fillStyle = "blue";
+            setGameStarted(true);
+          } else {
+            opponent = Matter.Bodies.circle(
+              data.screen.width / 2,
+              data.screen.height / 2,
+              data.player.size,
+              { isSensor: true }
+            );
+            opponent.render.visible = false;
+          }
 
           Matter.World.add(world, opponent);
-
-          if (data.opponent.playerId !== undefined) {
-            Matter.Body.setPosition(opponent, {
-              x: data.opponent.x,
-              y: data.opponent.y,
-            });
-            opponent.render.fillStyle = "blue";
-          }
 
           const render = Matter.Render.create({
             element: sceneRef.current || undefined,
@@ -94,6 +102,25 @@ const Game = () => {
           const runner = Matter.Runner.create();
           Matter.Runner.run(runner, engine);
           Matter.Render.run(render);
+
+          joinedRoom.onMessage("client_left", (data) => {
+            if (opponent) {
+              Matter.World.remove(world, opponent);
+              opponent = null;
+            }
+
+            if (player) {
+              Matter.World.remove(world, player);
+              player = null;
+            }
+
+            Matter.Render.stop(render);
+            Matter.Engine.clear(engine);
+            render.canvas.remove();
+            render.textures = {};
+
+            setRestart(true);
+          });
 
           // Clean up on component unmount
           return () => {
@@ -120,48 +147,51 @@ const Game = () => {
   }, []);
 
   const requestPlayerMovement = (x: number, y: number) => {
-    if (room) {
-      room.send("update_velocity", { x, y });
+    if (room && gameStarted) {
+      room.send("request_player_movement", { x, y });
     }
   };
 
-  const speed = 5;
-
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case "ArrowUp":
-        case "w":
-          requestPlayerMovement(0, -speed);
-          break;
-        case "ArrowDown":
-        case "s":
-          requestPlayerMovement(0, speed);
-          break;
-        case "ArrowLeft":
-        case "a":
-          requestPlayerMovement(-speed, 0);
-          break;
-        case "ArrowRight":
-        case "d":
-          requestPlayerMovement(speed, 0);
-          break;
-        default:
-          break;
-      }
-    };
+    if (gameStarted) {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        switch (event.key) {
+          case "ArrowUp":
+          case "w":
+            requestPlayerMovement(0, -1);
+            break;
+          case "ArrowDown":
+          case "s":
+            requestPlayerMovement(0, 1);
+            break;
+          case "ArrowLeft":
+          case "a":
+            requestPlayerMovement(-1, 0);
+            break;
+          case "ArrowRight":
+          case "d":
+            requestPlayerMovement(1, 0);
+            break;
+          default:
+            break;
+        }
+      };
 
-    window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keydown", handleKeyDown);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [room]);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [gameStarted]);
 
   return (
     <div className="container" ref={sceneRef}>
       {room ? (
-        <p className="room-information">Connected to room: {room.id}</p>
+        <p className="room-information">
+          Connected to room: {room.id}.<br />
+          Game {gameStarted ? "has" : "has not"} started.
+        </p>
       ) : (
         <p>Connecting...</p>
       )}
