@@ -21,17 +21,27 @@ To be able to run this project locally, you will need a few pieces of software i
 
 [(Back to top)](#table-of-contents)
 
-1. Install the required dependencies in the root directory and all subdirectories by running this command:
+1. Clone the GitHub repo by running this command in your desired directory:
+    ```bash
+    git clone https://github.com/PepijnBullens/christmas_game.git
+    ```
+2. Navigate to the cloned directory:
+    ```bash
+    cd christmas_game
+    ```
+3. Install the required dependencies in the root directory and all subdirectories by running this command:
     ```bash
     npm run install:all
     ```
-2. Run both projects simultaneously using this command:
+4. Run both projects simultaneously using this command:
+
     ```bash
     npm run dev:all
     ```
+
     This will run both the game itself, and the websocket server to supply the multiplayer functionality.
 
-3. Head over to http://localhost:3000 to play the game locally, have fun!
+5. Head over to http://localhost:3000 to play the game locally, have fun!
 
 # License
 
