@@ -8,6 +8,20 @@ const Game = () => {
   const [room, setRoom] = useState<Room<any> | null>(null);
   const [restart, setRestart] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [keysPressed, setKeysPressed] = useState<{ up: boolean; down: boolean; left: boolean; right: boolean; }>({
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  });
+
+
+  const DIRECTIONS = {
+    up: { x: 0, y: -1 },
+    down: { x: 0, y: 1 },
+    left: { x: -1, y: 0 },
+    right: { x: 1, y: 0 },
+  }
 
   const sceneRef = useRef(null);
   const engine = Matter.Engine.create();
@@ -19,6 +33,27 @@ const Game = () => {
   const COLYSEUS_SERVER = "ws://localhost:2567";
   const GAME_ROOM = "game_room";
   const client = new Client(COLYSEUS_SERVER);
+
+  useEffect(() => {
+    if (room && gameStarted) {
+      const playerMovement = { x: 0, y: 0 };
+
+      if (keysPressed.up) {
+        playerMovement.y -= 1;
+      }
+      if (keysPressed.down) {
+        playerMovement.y += 1;
+      }
+      if (keysPressed.left) {
+        playerMovement.x -= 1;
+      }
+      if (keysPressed.right) {
+        playerMovement.x += 1;
+      }
+
+      requestPlayerMovement(playerMovement.x, playerMovement.y);
+    }
+  }, [keysPressed])
 
   useEffect(() => {
     const joinRoom = async () => {
@@ -146,8 +181,11 @@ const Game = () => {
     };
   }, []);
 
+  console.log(keysPressed)
+
   const requestPlayerMovement = (x: number, y: number) => {
     if (room && gameStarted) {
+      console.log("Requesting player movement:", x, y);
       room.send("request_player_movement", { x, y });
     }
   };
@@ -158,29 +196,66 @@ const Game = () => {
         switch (event.key) {
           case "ArrowUp":
           case "w":
-            requestPlayerMovement(0, -1);
+            setKeysPressed((prevKeysPressed) => {
+              if (prevKeysPressed.up) return prevKeysPressed;
+              return { ...prevKeysPressed, up: true };
+            });
             break;
           case "ArrowDown":
           case "s":
-            requestPlayerMovement(0, 1);
+            setKeysPressed((prevKeysPressed) => {
+              if (prevKeysPressed.down) return prevKeysPressed;
+              return { ...prevKeysPressed, down: true };
+            });
             break;
           case "ArrowLeft":
           case "a":
-            requestPlayerMovement(-1, 0);
+            setKeysPressed((prevKeysPressed) => {
+              if (prevKeysPressed.left) return prevKeysPressed;
+              return { ...prevKeysPressed, left: true };
+            } );
             break;
           case "ArrowRight":
           case "d":
-            requestPlayerMovement(1, 0);
+            setKeysPressed((prevKeysPressed) => {
+              if (prevKeysPressed.right) return prevKeysPressed;
+              return { ...prevKeysPressed, right: true };
+            });
             break;
           default:
             break;
         }
       };
 
+      const handleKeyUp = (event: KeyboardEvent) => {
+        switch (event.key) {
+          case "ArrowUp":
+          case "w":
+            setKeysPressed({ ...keysPressed, up: false });
+            break;
+          case "ArrowDown":
+          case "s":
+            setKeysPressed({ ...keysPressed, down: false });
+            break;
+          case "ArrowLeft":
+          case "a":
+            setKeysPressed({ ...keysPressed, left: false });
+            break;
+          case "ArrowRight":
+          case "d":
+            setKeysPressed({ ...keysPressed, right: false });
+            break;
+          default:
+            break;
+        }
+      }
+
       window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
 
       return () => {
         window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
       };
     }
   }, [gameStarted]);
