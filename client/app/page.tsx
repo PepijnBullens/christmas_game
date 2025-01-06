@@ -8,20 +8,17 @@ const Game = () => {
   const [room, setRoom] = useState<Room<any> | null>(null);
   const [restart, setRestart] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [keysPressed, setKeysPressed] = useState<{ up: boolean; down: boolean; left: boolean; right: boolean; }>({
+  const [keysPressed, setKeysPressed] = useState<{
+    up: boolean;
+    down: boolean;
+    left: boolean;
+    right: boolean;
+  }>({
     up: false,
     down: false,
     left: false,
     right: false,
   });
-
-
-  const DIRECTIONS = {
-    up: { x: 0, y: -1 },
-    down: { x: 0, y: 1 },
-    left: { x: -1, y: 0 },
-    right: { x: 1, y: 0 },
-  }
 
   const sceneRef = useRef(null);
   const engine = Matter.Engine.create();
@@ -53,7 +50,7 @@ const Game = () => {
 
       requestPlayerMovement(playerMovement.x, playerMovement.y);
     }
-  }, [keysPressed])
+  }, [keysPressed]);
 
   useEffect(() => {
     const joinRoom = async () => {
@@ -181,7 +178,7 @@ const Game = () => {
     };
   }, []);
 
-  console.log(keysPressed)
+  console.log(keysPressed);
 
   const requestPlayerMovement = (x: number, y: number) => {
     if (room && gameStarted) {
@@ -213,7 +210,7 @@ const Game = () => {
             setKeysPressed((prevKeysPressed) => {
               if (prevKeysPressed.left) return prevKeysPressed;
               return { ...prevKeysPressed, left: true };
-            } );
+            });
             break;
           case "ArrowRight":
           case "d":
@@ -248,7 +245,7 @@ const Game = () => {
           default:
             break;
         }
-      }
+      };
 
       window.addEventListener("keydown", handleKeyDown);
       window.addEventListener("keyup", handleKeyUp);
