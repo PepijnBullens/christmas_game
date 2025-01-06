@@ -8,9 +8,15 @@ class Player extends Schema {
   @type("number") y: number = 0;
 }
 
+class Puck extends Schema {
+  @type("number") x: number = 0;
+  @type("number") y: number = 0;
+}
+
 // Define the game state schema
 export class GameRoomState extends Schema {
   @type({ map: Player }) players = new MapSchema<Player>();
+  @type(Puck) puck = new Puck();
 }
 
 // Extend the Colyseus room for game logic
@@ -18,6 +24,8 @@ export class GameRoom extends Room<GameRoomState> {
   maxClients = 2; // Maximum 2 players
   engine: Matter.Engine;
   playerBodies: Map<string, Matter.Body> = new Map();
+  puckBody: Matter.Body | null = null;
+  puckSize = 20;
 
   onCreate() {
     // Initialize Matter.js engine
@@ -31,6 +39,7 @@ export class GameRoom extends Room<GameRoomState> {
     const canvaswidth = 800;
     const canvasheight = 600;
     const thickness = 200;
+    const puckSize = 20;
 
     const borders = [
       // Top border
@@ -69,10 +78,18 @@ export class GameRoom extends Room<GameRoomState> {
 
     Matter.World.add(this.engine.world, borders);
 
+    this.puckBody = Matter.Bodies.circle(
+      canvaswidth / 2,
+      canvasheight / 2,
+      puckSize,
+      { restitution: 1, friction: 0, frictionAir: 0 }
+    );
+    Matter.World.add(this.engine.world, this.puckBody);
+
     // Game loop for physics
     this.clock.setInterval(() => {
       Matter.Engine.update(this.engine, 1000 / 60); // Update physics engine
-      this.broadcastPlayerPositions(); // Sync positions to clients
+      this.broadcastPositions(); // Sync positions to clients
     }, 1000 / 60);
 
     // Register message handling
@@ -100,6 +117,7 @@ export class GameRoom extends Room<GameRoomState> {
 
     const canvaswidth = 800;
     const canvasheight = 600;
+    const puckSize = 20;
     const playerStartOffset = 100;
 
     // Determine spawn position based on the number of players
@@ -136,6 +154,11 @@ export class GameRoom extends Room<GameRoomState> {
         width: canvaswidth,
         height: canvasheight,
       },
+      puck: {
+        x: this.state.puck.x,
+        y: this.state.puck.y,
+        size: puckSize,
+      },
     };
 
     client.send("setup", setup);
@@ -153,8 +176,7 @@ export class GameRoom extends Room<GameRoomState> {
     }
   }
 
-  broadcastPlayerPositions() {
-    // Update player positions from Matter.js bodies
+  broadcastPositions() {
     for (const [sessionId, body] of this.playerBodies.entries()) {
       const player = this.state.players.get(sessionId);
       if (player) {
@@ -163,7 +185,6 @@ export class GameRoom extends Room<GameRoomState> {
       }
     }
 
-    // Prepare positions to broadcast
     const positions = Array.from(this.state.players.entries()).map(
       ([sessionId, player]) => ({
         playerId: sessionId,
@@ -172,8 +193,18 @@ export class GameRoom extends Room<GameRoomState> {
       })
     );
 
-    // Broadcast positions to all clients
-    this.broadcast("update_players", positions);
+    this.state.puck.x = this.puckBody.position.x;
+    this.state.puck.y = this.puckBody.position.y;
+    const puckPosition = {
+      x: this.state.puck.x,
+      y: this.state.puck.y,
+      size: this.puckSize,
+    };
+
+    this.broadcast("update_positions", {
+      players: positions,
+      puck: puckPosition,
+    });
   }
 
   onLeave(client: Client) {

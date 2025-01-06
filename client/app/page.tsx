@@ -25,6 +25,7 @@ const Game = () => {
   const world = engine.world;
 
   let player: Matter.Body | null = null;
+  let puck: Matter.Body | null = null;
   let opponent: Matter.Body | null = null;
 
   const COLYSEUS_SERVER = "ws://localhost:2567";
@@ -58,8 +59,8 @@ const Game = () => {
         const joinedRoom = await client.joinOrCreate(GAME_ROOM);
         console.log("Joined room:", joinedRoom);
 
-        joinedRoom.onMessage("update_players", (data) => {
-          data.map((playerData: any) => {
+        joinedRoom.onMessage("update_positions", (data) => {
+          data.players.map((playerData: any) => {
             if (playerData.playerId !== joinedRoom.sessionId) {
               if (player) {
                 Matter.Body.setPosition(player, {
@@ -76,6 +77,11 @@ const Game = () => {
               }
             }
           });
+
+          // Update puck position
+          if (puck) {
+            Matter.Body.setPosition(puck, { x: data.puck.x, y: data.puck.y });
+          }
         });
 
         joinedRoom.onMessage("opponent_position", (data) => {
@@ -88,6 +94,10 @@ const Game = () => {
         });
 
         joinedRoom.onMessage("setup", (data) => {
+          puck = Matter.Bodies.circle(data.puck.x, data.puck.y, data.puck.size);
+          puck.render.fillStyle = "white";
+          Matter.World.add(world, puck);
+
           player = Matter.Bodies.circle(
             data.player.x,
             data.player.y,
